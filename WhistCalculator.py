@@ -18,9 +18,9 @@ def create_deck():
 
 def create_players(card_deck, num_players):
     lst = [Player("player1", card_deck[0])] * num_players
-    for i in range(num_players):
-        name_str = "player" + str(i + 1)
-        lst[i] = Player(name_str, card_deck[i])
+    for player in range(num_players):
+        name_str = "player" + str(player + 1)
+        lst[player] = Player(name_str, card_deck[player])
     return lst
 
 
@@ -47,42 +47,85 @@ def compare_cards(card1, card2, trump_suit):
 def play_round(info, trump_suit):
     best_player = 0
 
-    for i in range(1, len(info)):
-        if compare_cards(info[best_player].card, info[i].card, trump_suit):
-            best_player = i
+    for player in range(1, len(info)):
+        if compare_cards(info[best_player].card, info[player].card, trump_suit):
+            best_player = player
     return best_player
 
 
-def calculate_bid(info, trump_suit):
-    player1_card = info[0].card
-    player1_suit = get_suit(player1_card)
+def calculate_bid(info, player, trump_suit):
+    player_card = info[player].card
+    player_suit = get_suit(player_card)
+    num_cards = 51
     num_players = len(info)
+    extra_prob = 1
 
-    if player1_suit == trump_suit:
-        winning_cards = 12 - (player1_card % 13)
+    if player != 0:  # If target player isn't playing first
+        if player_suit != trump_suit:  # If their card is not a trump
+            # Calculate the probability that the first player has the same suit as the target player
+            num_players -= 1
+            extra_prob = (player_card % 13) / num_cards
+            num_cards -= 1
+            lose_cards = num_cards - 13 - 12 + (player_card % 13)
+        else:
+            lose_cards = num_cards - 12 + (player_card % 13)
     else:
-        winning_cards = 13 + 12 - (player1_card % 13)
-    probability = (pow(51 - winning_cards, num_players)) * math.factorial(51 - num_players) / math.factorial(51)
-    print("Probability to win: " + str(probability))
+        if player_suit == trump_suit:
+            lose_cards = num_cards - 12 + (player_card % 13)
+        else:
+            lose_cards = num_cards - 13 - 12 + (player_card % 13)
+    probability = extra_prob*(math.factorial(lose_cards) / math.factorial(lose_cards - num_players) *
+                              math.factorial(num_cards - num_players) / math.factorial(num_cards))
+    # print("Probability to win: " + str(probability))
     if probability >= 0.5:
-        return True
+        return 1
     else:
-        return False
+        return 0
+
+
+def collect_bids(info, num_players, trump_suit):
+    bid_list = np.zeros(num_players)
+    for player in range(num_players):
+        bid = calculate_bid(info, player, trump_suit)
+        if player == num_players - 1 and bid + sum(bid_list) == 1:
+            bid_list[player] = 1 - bid
+        else:
+            bid_list[player] = bid
+    return bid_list
+
+
+def collect_scores(winner, num_players, bids):
+    bonus_winners_list = np.zeros(num_players)
+    bonus_winners_list[winner] = 1
+    diff = bonus_winners_list - bids
+    bonus_winners = np.where(diff == 0)[0]
+    return bonus_winners
 
 
 number_of_players = 4
-suit_trump = 3
-deck = create_deck()
-player_info = create_players(deck, number_of_players)
-winning_player = play_round(player_info, suit_trump)
-print(deck)
-print("Player " + str(winning_player + 1) + " Wins!")
 
-if calculate_bid(player_info, suit_trump):
-    print("Predicted to win")
-    if winning_player == 0:
-        print("Bonus 10 points!")
+# For each player
+# Calculate Bid
+# Store bid
 
-elif winning_player != 0:
-    print("Bonus 10 points!")
+# Multi-run
+num_runs = 1000
+scores = np.zeros(number_of_players)
 
+for i in range(num_runs):
+    # Info for this run
+    suit_trump = random.randint(0, 4)
+    deck = create_deck()
+    player_info = create_players(deck, number_of_players)
+    bidding_list = collect_bids(player_info, number_of_players, suit_trump)
+
+    # Winning player calculation
+    winning_player = play_round(player_info, suit_trump)
+    winning_list = collect_scores(winning_player, number_of_players, bidding_list)
+
+    for j in winning_list:
+        scores[j] += 10
+    scores[winning_player] += 1
+
+print("Best Possible Score: " + str(num_runs * 11))
+print("Result: " + str(scores))
