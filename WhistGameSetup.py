@@ -81,11 +81,18 @@ def play_round(game_info, start_player):
         if compare_cards(table_cards[winning_pos], table_cards[player], 5):
             winning_player = current_player
             winning_pos = player
+    print(winning_pos)
     return table_cards, winning_player
 
 
 deck_of_cards = create_deck()
 player_info = create_players(deck_of_cards, 4, 13)
-print(play_round(player_info, 1))
+starting_player = 0
+
+while player_info[starting_player].card:
+    table, starting_player = play_round(player_info, starting_player)
+    print(str(table))
+
+
 
 
