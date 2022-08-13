@@ -21,7 +21,7 @@ def create_deck():
     return lst
 
 
-def create_players(card_deck, num_players, number_cards):
+def create_players(card_deck, num_players, number_cards, user_number):
     card_counter = 0
     bid_list = [0] * num_players
     lst = [Player("player's name", "list of cards", "bid number")] * num_players
@@ -29,8 +29,14 @@ def create_players(card_deck, num_players, number_cards):
         name_str = "player" + str(player + 1)
         player_hand = card_deck[card_counter:number_cards + card_counter]
         player_hand.sort()
-        bid = bidding(player_hand, num_players - 1 - player, sum(bid_list))
+
+        if player == user_number:
+            print("Here is your hand: ", player_hand)
+            bid = get_user_input([0, number_of_cards], "bid")
+        else:
+            bid = bidding(player_hand, num_players - 1 - player, sum(bid_list))
         bid_list[player] = bid
+
         lst[player] = Player(name_str, player_hand, bid)
         if len(player_hand) != number_cards:
             raise ValueError("Not enough cards to deal between players, try reducing players or cards per player")
@@ -157,24 +163,20 @@ while True:
         number_of_players = get_user_input([2, 6], "total number of players")
         card_limit = math.floor(52/number_of_players)
         number_of_cards = get_user_input([1, card_limit], "number of cards per person")
+        player_number = get_user_input([1, number_of_players], "player number")
+        player_number -= 1
     else:
         number_of_players = 4
         number_of_cards = 13
+        player_number = number_of_players + 1  # Effectively an invalid player
 
-    player_info = create_players(deck_of_cards, number_of_players, number_of_cards)
+    player_info = create_players(deck_of_cards, number_of_players, number_of_cards, player_number)
     print("Player 1 Hand ", player_info[0].card)
     print("Player 2 Hand ", player_info[1].card)
     print("Player 3 Hand ", player_info[2].card)
     print("Player 4 Hand ", player_info[3].card)
 
     if user_input:
-        player_number = get_user_input([1, number_of_players], "player number")
-        player_number -= 1
-
-        print("Here is your hand: " + str(player_info[player_number].card))
-
-        player_bid = get_user_input([0, number_of_cards], "bid")
-        player_info[player_number].bid = player_bid
         player_info[player_number].user = True
 
     starting_player = 0
@@ -186,10 +188,10 @@ while True:
 
     final_scores = calculate_score(player_info)
 
-    print("Player 1 Score ", player_info[0].score)
-    print("Player 2 Score ", player_info[1].score)
-    print("Player 3 Score ", player_info[2].score)
-    print("Player 4 Score ", player_info[3].score)
+    print("Player 1 Score: " + str(player_info[0].score) + "  Bid: " + str(player_info[0].bid))
+    print("Player 2 Score: " + str(player_info[1].score) + "  Bid: " + str(player_info[1].bid))
+    print("Player 3 Score: " + str(player_info[2].score) + "  Bid: " + str(player_info[2].bid))
+    print("Player 4 Score: " + str(player_info[3].score) + "  Bid: " + str(player_info[3].bid))
     print(final_scores)
     print("\n\n")
 
@@ -197,10 +199,3 @@ while True:
         user_game_decision = input("Would you like to play another game? Type 'y' for yes, enter any key for no")
         if user_game_decision != "y":
             break
-
-# Single Player Notes
-# They choose their starting position (i.e what player they are from 1-4)
-# They see their hand and choose a bid from 0 to the number of cards in their hand
-# Play each round
-# Find out their score
-# Give them a choice to play another game with the same number of cards, one less, one more or to stop
