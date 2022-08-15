@@ -31,7 +31,7 @@ def create_players(card_deck, num_players, number_cards, user_number):
         player_hand.sort()
 
         if player == user_number:
-            print("Here is your hand: ", player_hand)
+            print("Here is your hand: ", hand_converter(player_hand))
             bid = get_user_input([0, number_of_cards], "bid")
         else:
             bid = bidding(player_hand, num_players - 1 - player, sum(bid_list))
@@ -83,11 +83,13 @@ def play_card(hand, valid_suit, user):
             valid_cards = hand
 
         while True:
-            print("Your hand: ", hand)
-            print("Valid cards from your hand: ", valid_cards)
+            print("Your hand: ", hand_converter(hand))
+            print("Valid cards from your hand: ", hand_converter(valid_cards))
+            print("Choice indicated by index : ", list(range(0, len(valid_cards))))
             try:
-                played_card = int(input("Choose a valid card from your hand: "))
-                if played_card in valid_cards:
+                played_card_index = int(input("Choose a valid card from your hand: "))
+                if played_card_index < len(valid_cards):
+                    played_card = valid_cards[played_card_index]
                     break
                 print("Please choose a valid card from list given")
             except ValueError:
@@ -103,7 +105,7 @@ def play_card(hand, valid_suit, user):
 
 def play_round(game_info, start_player):
     num_players = len(game_info)  # Collect player information
-    table_cards = [0] * num_players  # Cards on the table
+    table_cards = []  # Cards on the table
     winning_pos = 0  # The position of the best player so far
     winning_player = start_player  # The player who won (not necessarily the same as position)
 
@@ -117,11 +119,11 @@ def play_round(game_info, start_player):
             leading_suit = get_suit(table_cards[0])
 
         if is_user:
-            print("Current cards on the table: ", table_cards[:player])
+            print("Current cards on the table: ", hand_converter(table_cards[:player]))
         played_card = play_card(current_hand, leading_suit, is_user)
 
         game_info[current_player].card.remove(played_card)
-        table_cards[current_player] = played_card
+        table_cards.append(played_card)
 
     for player in range(1, num_players):
         current_player = (player + start_player) % num_players
@@ -156,6 +158,27 @@ def get_user_input(input_range, info_string):
     return output_value
 
 
+def hand_converter(hand):
+    suit_list = ["♣", "♦",  "♥", "♠"]
+    card_list = ["J", "Q", "K", "A"]
+    hand_list = [""]*len(hand)
+    counter = 0
+
+    for card in hand:
+        suit_index = get_suit(card)
+        card_suit = suit_list[suit_index]
+        card = card % 13
+        if card > 8:
+            card_val = card_list[card - 9]
+        else:
+            card_val = str(card + 2)
+        card_str = card_val + card_suit
+        hand_list[counter] = card_str
+        counter += 1
+
+    return hand_list
+
+
 user_input = True
 while True:
     deck_of_cards = create_deck()
@@ -171,10 +194,10 @@ while True:
         player_number = number_of_players + 1  # Effectively an invalid player
 
     player_info = create_players(deck_of_cards, number_of_players, number_of_cards, player_number)
-    print("Player 1 Hand ", player_info[0].card)
-    print("Player 2 Hand ", player_info[1].card)
-    print("Player 3 Hand ", player_info[2].card)
-    print("Player 4 Hand ", player_info[3].card)
+    print("Player 1 Hand ", hand_converter(player_info[0].card))
+    print("Player 2 Hand ", hand_converter(player_info[1].card))
+    print("Player 3 Hand ", hand_converter(player_info[2].card))
+    print("Player 4 Hand ", hand_converter(player_info[3].card))
 
     if user_input:
         player_info[player_number].user = True
@@ -184,7 +207,7 @@ while True:
     while player_info[starting_player].card:
         table, starting_player = play_round(player_info, starting_player)
         player_info[starting_player].score += 1
-        print(str(table))
+        print(hand_converter(table))
 
     final_scores = calculate_score(player_info)
 
