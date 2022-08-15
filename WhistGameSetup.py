@@ -21,7 +21,7 @@ def create_deck():
     return lst
 
 
-def create_players(card_deck, num_players, number_cards, user_number):
+def create_players(card_deck, num_players, number_cards, user_number, bid_dis):
     card_counter = 0
     bid_list = [0] * num_players
     lst = [Player("player's name", "list of cards", "bid number")] * num_players
@@ -34,7 +34,7 @@ def create_players(card_deck, num_players, number_cards, user_number):
             print("Here is your hand: ", hand_converter(player_hand))
             bid = get_user_input([0, number_of_cards], "bid")
         else:
-            bid = bidding(player_hand, num_players - 1 - player, sum(bid_list))
+            bid = bidding(player_hand, num_players - 1 - player, sum(bid_list), bid_dis)
         bid_list[player] = bid
 
         lst[player] = Player(name_str, player_hand, bid)
@@ -44,11 +44,12 @@ def create_players(card_deck, num_players, number_cards, user_number):
     return lst
 
 
-def bidding(player_hand, num_players_after, sum_bids):
-    bid = random.randint(0, len(player_hand))
+def bidding(player_hand, num_players_after, sum_bids, bid_dis):
+    bidding_range = list(range(14))
+    bid = np.random.choice(bidding_range, 1, p=bid_dis)
     if num_players_after == 0:
         while bid + sum_bids == len(player_hand):
-            bid = random.randint(0, len(player_hand))
+            bid = np.random.choice(bidding_range, 1, p=bid_dis)
     return bid
 
 
@@ -136,18 +137,20 @@ def play_round(game_info, start_player):
         if compare_cards(table_cards[winning_pos], table_cards[player], 5):
             winning_player = current_player
             winning_pos = player
-    print('Winner of round is player', winning_player + 1)
+    #print('Winner of round is player', winning_player + 1)
     return table_cards, winning_player
 
 
 def calculate_score(game_info):
     num_players = len(game_info)
     player_scores = [0] * num_players
+    tricks_won = [0] * num_players
     for player in range(num_players):
         player_scores[player] += game_info[player].score
+        tricks_won[player] = player_scores[player]
         if game_info[player].score == game_info[player].bid:
             player_scores[player] += 10
-    return player_scores
+    return player_scores, tricks_won
 
 
 def get_user_input(input_range, info_string):
@@ -184,8 +187,18 @@ def hand_converter(hand):
     return hand_list
 
 
-user_input = True
+bidding_matrix = np.load("BiddingMatrix.npy")
+num_of_runs = 1000
+counter = 0
+user_input = False
+number_of_players = 4
+number_of_cards = 13
+collection_counter = 0
+player_number = number_of_players + 1  # Effectively an invalid player
+
+
 while True:
+    counter += 1
     deck_of_cards = create_deck()
     if user_input:
         number_of_players = get_user_input([2, 6], "total number of players")
@@ -193,20 +206,16 @@ while True:
         number_of_cards = get_user_input([1, card_limit], "number of cards per person")
         player_number = get_user_input([1, number_of_players], "player number")
         player_number -= 1
-    else:
-        number_of_players = 4
-        number_of_cards = 13
-        player_number = number_of_players + 1  # Effectively an invalid player
 
-    player_info = create_players(deck_of_cards, number_of_players, number_of_cards, player_number)
+    bidding_distribution = bidding_matrix[(13*(number_of_players - 2) + number_of_cards - 1)]
+    player_info = create_players(deck_of_cards, number_of_players, number_of_cards, player_number, bidding_distribution)
 
+    """
     print("\n\n")
-    print("Player 1 Hand ", hand_converter(player_info[0].card))
-    print("Player 2 Hand ", hand_converter(player_info[1].card))
-    print("Player 3 Hand ", hand_converter(player_info[2].card))
-    print("Player 4 Hand ", hand_converter(player_info[3].card))
+    for player in range(number_of_players):
+        print("Player " + str(player + 1) + " Hand ", hand_converter(player_info[player].card))
     print("\n\n")
-
+    """
     if user_input:
         player_info[player_number].user = True
 
@@ -215,15 +224,14 @@ while True:
     while player_info[starting_player].card:
         table, starting_player = play_round(player_info, starting_player)
         player_info[starting_player].score += 1
-        print(hand_converter(table))
-        print("Next Round!\n")
+        #print(hand_converter(table))
+        #print("Next Round!\n")
 
-    final_scores = calculate_score(player_info)
+    final_scores, tricks_scores = calculate_score(player_info)
 
-    print("Player 1 tricks won: " + str(player_info[0].score) + "  Bid: " + str(player_info[0].bid))
-    print("Player 2 tricks won: " + str(player_info[1].score) + "  Bid: " + str(player_info[1].bid))
-    print("Player 3 tricks won: " + str(player_info[2].score) + "  Bid: " + str(player_info[2].bid))
-    print("Player 4 tricks won: " + str(player_info[3].score) + "  Bid: " + str(player_info[3].bid))
+    for player in range(number_of_players):
+        print("Player " + str(player + 1) + " tricks won: " + str(player_info[player].score) + "  Bid: "
+              + str(player_info[player].bid))
     print("Final scores for players ", final_scores)
     print("\n\n")
 
@@ -231,3 +239,6 @@ while True:
         user_game_decision = input("Would you like to play another game? Type 'y' for yes, enter any key for no")
         if user_game_decision != "y":
             break
+    if counter >= num_of_runs:
+        break
+
