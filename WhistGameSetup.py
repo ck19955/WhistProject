@@ -108,6 +108,7 @@ def play_round(game_info, start_player):
     table_cards = []  # Cards on the table
     winning_pos = 0  # The position of the best player so far
     winning_player = start_player  # The player who won (not necessarily the same as position)
+    position_strings = ["st", "nd", "rd"]
 
     for player in range(num_players):
         current_player = (player + start_player) % num_players
@@ -119,6 +120,11 @@ def play_round(game_info, start_player):
             leading_suit = get_suit(table_cards[0])
 
         if is_user:
+            if player < 3:
+                placement = str(player + 1) + position_strings[player]
+            else:
+                placement = str(player + 1) + "th"
+            print("You are playing " + placement)
             print("Current cards on the table: ", hand_converter(table_cards[:player]))
         played_card = play_card(current_hand, leading_suit, is_user)
 
@@ -130,8 +136,7 @@ def play_round(game_info, start_player):
         if compare_cards(table_cards[winning_pos], table_cards[player], 5):
             winning_player = current_player
             winning_pos = player
-    print(winning_pos)
-    print('player', winning_player + 1)
+    print('Winner of round is player', winning_player + 1)
     return table_cards, winning_player
 
 
@@ -194,10 +199,13 @@ while True:
         player_number = number_of_players + 1  # Effectively an invalid player
 
     player_info = create_players(deck_of_cards, number_of_players, number_of_cards, player_number)
+
+    print("\n\n")
     print("Player 1 Hand ", hand_converter(player_info[0].card))
     print("Player 2 Hand ", hand_converter(player_info[1].card))
     print("Player 3 Hand ", hand_converter(player_info[2].card))
     print("Player 4 Hand ", hand_converter(player_info[3].card))
+    print("\n\n")
 
     if user_input:
         player_info[player_number].user = True
@@ -208,14 +216,15 @@ while True:
         table, starting_player = play_round(player_info, starting_player)
         player_info[starting_player].score += 1
         print(hand_converter(table))
+        print("Next Round!\n")
 
     final_scores = calculate_score(player_info)
 
-    print("Player 1 Score: " + str(player_info[0].score) + "  Bid: " + str(player_info[0].bid))
-    print("Player 2 Score: " + str(player_info[1].score) + "  Bid: " + str(player_info[1].bid))
-    print("Player 3 Score: " + str(player_info[2].score) + "  Bid: " + str(player_info[2].bid))
-    print("Player 4 Score: " + str(player_info[3].score) + "  Bid: " + str(player_info[3].bid))
-    print(final_scores)
+    print("Player 1 tricks won: " + str(player_info[0].score) + "  Bid: " + str(player_info[0].bid))
+    print("Player 2 tricks won: " + str(player_info[1].score) + "  Bid: " + str(player_info[1].bid))
+    print("Player 3 tricks won: " + str(player_info[2].score) + "  Bid: " + str(player_info[2].bid))
+    print("Player 4 tricks won: " + str(player_info[3].score) + "  Bid: " + str(player_info[3].bid))
+    print("Final scores for players ", final_scores)
     print("\n\n")
 
     if user_input:
