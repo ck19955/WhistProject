@@ -187,58 +187,58 @@ def hand_converter(hand):
     return hand_list
 
 
-bidding_matrix = np.load("BiddingMatrix.npy")
-num_of_runs = 1000
-counter = 0
-user_input = False
-number_of_players = 4
-number_of_cards = 13
-collection_counter = 0
-player_number = number_of_players + 1  # Effectively an invalid player
+if __name__ == "__main__":
+    bidding_matrix = np.load("BiddingMatrix.npy")
+    num_of_runs = 1000
+    counter = 0
+    user_input = False
+    number_of_players = 4
+    number_of_cards = 13
+    collection_counter = 0
+    player_number = number_of_players + 1  # Effectively an invalid player
 
+    while True:
+        counter += 1
+        deck_of_cards = create_deck()
+        if user_input:
+            number_of_players = get_user_input([2, 6], "total number of players")
+            card_limit = math.floor(52/number_of_players)
+            number_of_cards = get_user_input([1, card_limit], "number of cards per person")
+            player_number = get_user_input([1, number_of_players], "player number")
+            player_number -= 1
 
-while True:
-    counter += 1
-    deck_of_cards = create_deck()
-    if user_input:
-        number_of_players = get_user_input([2, 6], "total number of players")
-        card_limit = math.floor(52/number_of_players)
-        number_of_cards = get_user_input([1, card_limit], "number of cards per person")
-        player_number = get_user_input([1, number_of_players], "player number")
-        player_number -= 1
+        bidding_distribution = bidding_matrix[(13*(number_of_players - 2) + number_of_cards - 1)]
+        player_info = create_players(deck_of_cards, number_of_players, number_of_cards, player_number, bidding_distribution)
 
-    bidding_distribution = bidding_matrix[(13*(number_of_players - 2) + number_of_cards - 1)]
-    player_info = create_players(deck_of_cards, number_of_players, number_of_cards, player_number, bidding_distribution)
+        """
+        print("\n\n")
+        for player in range(number_of_players):
+            print("Player " + str(player + 1) + " Hand ", hand_converter(player_info[player].card))
+        print("\n\n")
+        """
+        if user_input:
+            player_info[player_number].user = True
 
-    """
-    print("\n\n")
-    for player in range(number_of_players):
-        print("Player " + str(player + 1) + " Hand ", hand_converter(player_info[player].card))
-    print("\n\n")
-    """
-    if user_input:
-        player_info[player_number].user = True
+        starting_player = 0
 
-    starting_player = 0
+        while player_info[starting_player].card:
+            table, starting_player = play_round(player_info, starting_player)
+            player_info[starting_player].score += 1
+            #print(hand_converter(table))
+            #print("Next Round!\n")
 
-    while player_info[starting_player].card:
-        table, starting_player = play_round(player_info, starting_player)
-        player_info[starting_player].score += 1
-        #print(hand_converter(table))
-        #print("Next Round!\n")
+        final_scores, tricks_scores = calculate_score(player_info)
 
-    final_scores, tricks_scores = calculate_score(player_info)
+        for player in range(number_of_players):
+            print("Player " + str(player + 1) + " tricks won: " + str(player_info[player].score) + "  Bid: "
+                  + str(player_info[player].bid))
+        print("Final scores for players ", final_scores)
+        print("\n\n")
 
-    for player in range(number_of_players):
-        print("Player " + str(player + 1) + " tricks won: " + str(player_info[player].score) + "  Bid: "
-              + str(player_info[player].bid))
-    print("Final scores for players ", final_scores)
-    print("\n\n")
-
-    if user_input:
-        user_game_decision = input("Would you like to play another game? Type 'y' for yes, enter any key for no")
-        if user_game_decision != "y":
+        if user_input:
+            user_game_decision = input("Would you like to play another game? Type 'y' for yes, enter any key for no")
+            if user_game_decision != "y":
+                break
+        if counter >= num_of_runs:
             break
-    if counter >= num_of_runs:
-        break
 
